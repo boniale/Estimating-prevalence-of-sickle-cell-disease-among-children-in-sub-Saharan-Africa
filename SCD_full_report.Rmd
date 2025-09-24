@@ -1,0 +1,42 @@
+---
+title: "SCD Prevalence Analysis"
+output:
+  html_document:
+    toc: true
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse); library(readxl); library(janitor); library(metafor); library(lme4); library(openxlsx); library(sf); library(tmap); library(countrycode); library(glue); library(flextable)
+here::here()
+data_dir <- here::here("..","data")
+results_dir <- here::here("..","results")
+dir.create(results_dir, showWarnings = FALSE)
+prev_file  <- file.path(data_dir, "preprocessed_prev_data_updated.xlsx")
+pop_file   <- file.path(data_dir, "WPP2023.xlsx")
+class_file <- file.path(data_dir, "CLASS.xlsx")
+sdi_file   <- file.path(data_dir, "SDI.xlsx")
+shp_file   <- file.path(data_dir, "africa_shapefile.geojson")
+```
+
+# Methods (short)
+This report runs the same pipeline as in the manuscript... (edit as needed).
+
+# Data prep and crude pooling
+```{r data-prep}
+prev_raw <- readxl::read_excel(prev_file, sheet = 1) %>% janitor::clean_names()
+prev <- prev_raw %>% rename_with(~ str_replace_all(.x, "\\s+", "_")) %>% rename(Country = any_of(c("country","country_name")), Cases = any_of(c("cases","case_count")), SampleSize = any_of(c("sample_size","n")), Age_group = any_of(c("age_group","age")), HB = any_of(c("hb","hb_type")), lon = any_of(c("lon","longitude")), lat = any_of(c("lat","latitude")), StudyYear = any_of(c("study_year","year"))) %>% mutate(Cases = as.numeric(Cases), SampleSize = as.numeric(SampleSize))
+prev <- prev %>% mutate(Age = case_when(str_detect(Age_group, regex("newborn|neonat|u1|0-1|0 to 1", ignore_case = TRUE)) ~ "U1", str_detect(Age_group, regex("u5|0-4|0 to 4", ignore_case = TRUE)) ~ "U5", str_detect(Age_group, regex("u15|0-14|0 to 14", ignore_case = TRUE)) ~ "U15", TRUE ~ NA_character_), Subtype = case_when(str_to_lower(HB) %in% c("all","total") ~ "Total", str_detect(HB, regex("^ss$|sickle.*ss|fs$", ignore_case = TRUE)) ~ "SS", str_detect(HB, regex("^sc$|fsc", ignore_case = TRUE)) ~ "SC", TRUE ~ "Other")) %>% mutate(p_obs = Cases / SampleSize, var_p = ifelse(!is.na(p_obs) & SampleSize>0, p_obs*(1-p_obs)/SampleSize, NA_real_))
+openxlsx::write.xlsx(prev, file.path(results_dir, "prev_cleaned.xlsx"))
+```
+
+# Modelling and predictions
+```{r modelling}
+# (same code as in modular scripts: fit GLMM & predict)
+```
+
+# Results and figures
+```{r results}
+# (load result file and show tables/figures)
+```
